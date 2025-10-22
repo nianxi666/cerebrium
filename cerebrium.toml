@@ -1,0 +1,35 @@
+[cerebrium.deployment]
+name = "qwen-image-inference"
+python_version = "3.11"
+include = [
+  "./*",
+]
+exclude = [
+  "./.git",
+  "./.venv",
+  "./__pycache__",
+  "./cerebrium-build",
+]
+
+[cerebrium.runtime.custom]
+entrypoint = ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+port = 8000
+healthcheck_endpoint = "/health"
+
+[cerebrium.hardware]
+region = "us-east-1"
+provider = "aws"
+compute = "AMPERE_A10"
+cpu = 8
+memory = 40.0
+gpu_count = 1
+
+[cerebrium.scaling]
+min_replicas = 0
+max_replicas = 1
+cooldown = 60
+replica_concurrency = 1
+response_grace_period = 900
+
+[cerebrium.dependencies.paths]
+pip = "requirements.txt"
