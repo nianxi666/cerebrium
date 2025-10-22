@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger("qwen_image_service")
 logging.basicConfig(level=logging.INFO)
 
-MODEL_ID = os.getenv("QWEN_IMAGE_MODEL_ID", "Qwen/Qwen2-Image-1.2B-Distilled")
+MODEL_ID = os.getenv("QWEN_IMAGE_MODEL_ID", "Qwen/Qwen2-Image")
 MIN_RESOLUTION = int(os.getenv("QWEN_MIN_RESOLUTION", "512"))
 MAX_RESOLUTION = int(os.getenv("QWEN_MAX_RESOLUTION", "1024"))
 DEFAULT_INFERENCE_STEPS = int(os.getenv("QWEN_DEFAULT_STEPS", "30"))

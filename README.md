@@ -1,6 +1,6 @@
 # Qwen Image Deployment on Cerebrium
 
-This repository packages a FastAPI application that wraps the distilled, quantized Qwen image generation model and is ready to deploy on [Cerebrium](https://www.cerebrium.ai/). It provides:
+This repository packages a FastAPI application that wraps the standard Qwen image generation model (`Qwen/Qwen2-Image` by default) and is ready to deploy on [Cerebrium](https://www.cerebrium.ai/). It provides:
 
 - A production-ready API (`main.py`) with `/health` and `/generate` endpoints.
 - A `cerebrium.toml` configuration tuned for GPU-backed deployments.
@@ -22,7 +22,7 @@ This repository packages a FastAPI application that wraps the distilled, quantiz
 
 - Python 3.10 or newer.
 - Access to a Cerebrium project with GPU capacity (for best performance).
-- A Hugging Face account if the target Qwen model requires authentication (set `HF_TOKEN`).
+- A Hugging Face account with access to the selected Qwen image model (accept the license on Hugging Face and set `HF_TOKEN`).
 
 ## 1. Local environment setup
 
@@ -53,8 +53,8 @@ For convenience, you can place these values in a local `.env` file (listed in `.
 cat > .env <<'EOF'
 export CEREBRIUM_SERVICE_ACCOUNT_TOKEN="..."
 export CEREBRIUM_PROJECT_ID="p-9de54108"
-export HF_TOKEN="<optional huggingface token>"
-export QWEN_IMAGE_MODEL_ID="Qwen/Qwen2-Image-1.2B-Distilled"
+export HF_TOKEN="<required huggingface token if the model needs authentication>"
+export QWEN_IMAGE_MODEL_ID="Qwen/Qwen2-Image"
 EOF
 
 source .env
@@ -73,7 +73,7 @@ The CLI reads the deployment metadata from `cerebrium.toml` and builds a contain
 
 ### Deployment tuning
 
-- **Model selection:** Override `QWEN_IMAGE_MODEL_ID` to target another distilled/quantized variant, e.g. `Qwen/Qwen2-Image-1.2B-Distilled-AWQ`.
+- **Model selection:** Override `QWEN_IMAGE_MODEL_ID` to target other variants, e.g. the distilled `Qwen/Qwen2-Image-1.2B-Distilled` or AWQ quantized checkpoints.
 - **Resolution limits:** Adjust `QWEN_MIN_RESOLUTION` / `QWEN_MAX_RESOLUTION` environment variables if you need different bounds.
 - **Default settings:** Override `QWEN_DEFAULT_STEPS` and `QWEN_DEFAULT_GUIDANCE` to change the default inference parameters.
 
@@ -132,6 +132,7 @@ curl -X POST "https://api.aws.us-east-1.cerebrium.ai/v4/p-9de54108/qwen-image-in
 |-------|------------------|
 | `Model is still loading` | Wait for startup to complete or verify GPU availability. |
 | `Image generation failed` | Check build logs for missing dependencies or Hugging Face permissions. |
+| `Failed to load model Qwen/Qwen2-Image` | Make sure your Hugging Face account has accepted the model’s license and provide `HF_TOKEN` as an environment variable/secret. |
 | `401 Unauthorized` | Ensure the `Authorization: Bearer` header contains a valid, non-expired service account token. |
 | Slow inference | Reduce resolution or inference steps, or upgrade to a stronger GPU tier in `cerebrium.toml`. |
 
