@@ -1,0 +1,5 @@
+{
+  "prompt": "A beautiful landscape painting of a waterfall in a lush forest.",
+  "num_inference_steps": 4,
+  "guidance_scale": 0
+}
