@@ -173,7 +173,24 @@ def _resolve_input(
     raise ValueError(f"{description} must be provided via URL or base64 upload.")
 
 
-def predict(item: Item, context) -> dict:
+def predict(
+    video_url: Optional[str] = None,
+    audio_url: Optional[str] = None,
+    video_base64: Optional[str] = None,
+    audio_base64: Optional[str] = None,
+    guidance_scale: float = 1.5,
+    inference_steps: int = 20,
+    seed: int = 1247
+) -> dict:
+    item = Item(
+        video_url=video_url,
+        audio_url=audio_url,
+        video_base64=video_base64,
+        audio_base64=audio_base64,
+        guidance_scale=guidance_scale,
+        inference_steps=inference_steps,
+        seed=seed
+    )
     setup()
 
     assert PIPELINE is not None and CONFIG is not None  # for type-checkers
