@@ -12,6 +12,9 @@ memory = 32.0
 min_replicas = 0
 cooldown = 0
 
+[cerebrium.volumes]
+persistent-storage = "/persistent-storage"
+
 [cerebrium.dependencies]
 
 [cerebrium.dependencies.apt]

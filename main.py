@@ -1,4 +1,5 @@
 import base64
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -17,9 +18,22 @@ from latentsync.pipelines.lipsync_pipeline import LipsyncPipeline
 from latentsync.whisper.audio2feature import Audio2Feature
 
 CONFIG_PATH = Path("configs/unet/stage2_512.yaml")
-CHECKPOINT_PATH = Path("checkpoints/latentsync_unet.pt")
-WHISPER_PATH = Path("checkpoints/whisper/tiny.pt")
-TORCH_HUB_CACHE = Path.home() / ".cache" / "torch" / "hub" / "checkpoints" / "vgg16-397923af.pth"
+PERSISTENT_ROOT = Path("/persistent-storage")
+if PERSISTENT_ROOT.exists() and os.access(PERSISTENT_ROOT, os.W_OK):
+    STORAGE_BASE = PERSISTENT_ROOT / "latentsync"
+else:
+    STORAGE_BASE = Path.cwd()
+
+
+def storage_path(relative: str) -> Path:
+    path = STORAGE_BASE / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+CHECKPOINT_PATH = storage_path("checkpoints/latentsync_unet.pt")
+WHISPER_PATH = storage_path("checkpoints/whisper/tiny.pt")
+TORCH_HUB_CACHE = storage_path(".cache/torch/hub/checkpoints/vgg16-397923af.pth")
 
 PIPELINE: Optional[LipsyncPipeline] = None
 CONFIG: Optional[OmegaConf] = None
