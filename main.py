@@ -7,6 +7,7 @@ from typing import Optional
 
 import requests
 import torch
+from torch.hub import download_url_to_file
 from accelerate.utils import set_seed
 from diffusers import AutoencoderKL, DDIMScheduler
 from huggingface_hub import hf_hub_download
@@ -62,11 +63,20 @@ def _ensure_torch_hub_weights() -> None:
     if TORCH_HUB_CACHE.exists():
         return
     TORCH_HUB_CACHE.parent.mkdir(parents=True, exist_ok=True)
-    downloaded_path = hf_hub_download(
-        repo_id="pytorch/vision",
-        filename="vgg16-397923af.pth",
+    urls = (
+        "https://download.pytorch.org/models/vgg16-397923af.pth",
+        "https://huggingface.co/pytorch/vision/resolve/main/vgg16-397923af.pth",
     )
-    _copy_from_cache(downloaded_path, TORCH_HUB_CACHE)
+    last_error: Optional[Exception] = None
+    for url in urls:
+        try:
+            download_url_to_file(url, str(TORCH_HUB_CACHE), progress=False)
+            return
+        except Exception as exc:  # pragma: no cover - network failure paths
+            last_error = exc
+            if TORCH_HUB_CACHE.exists():
+                TORCH_HUB_CACHE.unlink()
+    raise RuntimeError("Unable to download VGG16 weights for LatentSync.") from last_error
 
 
 def download_weights() -> None:
