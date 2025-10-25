@@ -36,9 +36,24 @@ echo "🎬 使用演示视频: $VIDEO_PATH"
 echo "🎵 使用演示音频: $AUDIO_PATH"
 echo ""
 
+# 检测可用的 Python 命令
+PYTHON_CMD=""
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "❌ 错误: 未找到 Python 命令"
+    echo "   请安装 Python 3 (python3 或 python)"
+    exit 1
+fi
+
+echo "🐍 使用 Python 命令: $PYTHON_CMD"
+echo ""
+
 # 生成临时 payload 文件
 PAYLOAD_FILE=$(mktemp)
-python3 - "$PAYLOAD_FILE" <<'PY'
+$PYTHON_CMD - "$PAYLOAD_FILE" <<'PY'
 import base64
 import json
 import pathlib
@@ -58,6 +73,17 @@ payload = {
 
 payload_path.write_text(json.dumps(payload))
 PY
+
+# 检查 payload 文件是否成功生成
+if [ ! -s "$PAYLOAD_FILE" ]; then
+    echo "❌ 错误: Payload 文件生成失败"
+    echo "   请确保 Python 和必要的库（json, base64）已安装"
+    rm -f "$PAYLOAD_FILE"
+    exit 1
+fi
+
+echo "✅ Payload 文件已生成"
+echo ""
 
 # 记录开始时间
 START_TIME=$(date +%s)
@@ -97,7 +123,7 @@ if [ "$HTTP_CODE" -eq 200 ]; then
     echo ""
     
     # 提取并保存视频
-    VIDEO_BASE64=$(echo "$BODY" | python3 -c "import json, sys; data=json.load(sys.stdin); print(data.get('result', {}).get('video_base64', ''))" 2>/dev/null)
+    VIDEO_BASE64=$(echo "$BODY" | $PYTHON_CMD -c "import json, sys; data=json.load(sys.stdin); print(data.get('result', {}).get('video_base64', ''))" 2>/dev/null)
     
     if [ -n "$VIDEO_BASE64" ]; then
         OUTPUT_VIDEO="output_$(date +%Y%m%d_%H%M%S).mp4"
@@ -107,10 +133,10 @@ if [ "$HTTP_CODE" -eq 200 ]; then
         
         # 显示响应的详细信息（不包含视频base64）
         echo "📝 响应详情:"
-        echo "$BODY" | python3 -c "import json, sys; data=json.load(sys.stdin); result=data.get('result',{}); details=result.get('details',{}); print(json.dumps({'run_id': data.get('run_id'), 'run_time_ms': data.get('run_time_ms'), 'details': details}, indent=2))" 2>/dev/null || echo "$BODY"
+        echo "$BODY" | $PYTHON_CMD -c "import json, sys; data=json.load(sys.stdin); result=data.get('result',{}); details=result.get('details',{}); print(json.dumps({'run_id': data.get('run_id'), 'run_time_ms': data.get('run_time_ms'), 'details': details}, indent=2))" 2>/dev/null || echo "$BODY"
     else
         echo "📝 响应内容:"
-        echo "$BODY" | python3 -m json.tool 2>/dev/null || echo "$BODY"
+        echo "$BODY" | $PYTHON_CMD -m json.tool 2>/dev/null || echo "$BODY"
     fi
 else
     echo "❌ 请求失败"
