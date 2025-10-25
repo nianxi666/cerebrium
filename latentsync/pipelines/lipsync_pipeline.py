@@ -4,6 +4,7 @@ import inspect
 import math
 import os
 import shutil
+from pathlib import Path
 from typing import Callable, List, Optional, Union
 import subprocess
 
@@ -473,5 +474,12 @@ class LipsyncPipeline(DiffusionPipeline):
 
         sf.write(os.path.join(temp_dir, "audio.wav"), audio_samples, audio_sample_rate)
 
+        Path(video_out_path).parent.mkdir(parents=True, exist_ok=True)
         command = f"ffmpeg -y -loglevel error -nostdin -i {os.path.join(temp_dir, 'video.mp4')} -i {os.path.join(temp_dir, 'audio.wav')} -c:v libx264 -crf 18 -c:a aac -q:v 0 -q:a 0 {video_out_path}"
-        subprocess.run(command, shell=True)
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            raise RuntimeError(f"ffmpeg failed with code {result.returncode}: {result.stderr}")
+        
+        if not os.path.exists(video_out_path):
+            raise FileNotFoundError(f"Output video was not created at {video_out_path}")
