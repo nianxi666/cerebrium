@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支持AI助手的3D体素查看器 (带动画渲染窗口)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <style>
+        body { background-color: #111827; color: #f3f4f6; overflow: hidden; margin: 0; padding: 0; font-family: sans-serif; }
+        #main-container { position: relative; width: 100vw; height: 100vh; }
+        #mount { width: 100%; height: 100%; display: block; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #374151; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .sparkle-button::before { content: '✨'; position: absolute; top: -5px; right: -5px; animation: sparkle 1.5s infinite; }
+        @keyframes sparkle { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.5); opacity: 1; } }
+        
+        /* 动画渲染窗口样式 */
+        #animation-window { 
+            display: none; 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 80vw; 
+            height: 80vh; 
+            background: #1f2937; 
+            border: 2px solid #4b5563; 
+            border-radius: 8px; 
+            z-index: 1000; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        #animation-window-header {
+            background: #374151;
+            padding: 12px 16px;
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+        #animation-window-canvas {
+            width: 100%;
+            height: calc(100% - 140px);
+            display: block;
+        }
+        #animation-controls {
+            background: #374151;
+            padding: 16px;
+            border-radius: 0 0 6px 6px;
+        }
+        select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <div id="mount"></div>
+
+        <div class="absolute top-2.5 left-2.5 bg-gray-800 bg-opacity-80 p-3 rounded-lg shadow-xl z-20 max-h-[calc(100vh-20px)] overflow-y-auto w-44 md:w-52 custom-scrollbar">
+            <div class="mb-3">
+                <label for="modelInput" class="block text-xs font-semibold mb-1.5 text-gray-300">1. 加载模型 (.glb):</label>
+                <input type="file" id="modelInput" accept=".glb,.gltf" class="block w-full text-xs text-gray-300 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+            </div>
+            <div class="mb-3">
+                <label for="texturePackInput" class="block text-xs font-semibold mb-1.5 text-gray-300">2. 加载材质包 (.zip):</label>
+                <input type="file" id="texturePackInput" accept=".zip" class="block w-full text-xs text-gray-300 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+            </div>
+
+            <div class="mt-3 pt-3 border-t border-gray-700">
+                <h3 class="text-xs font-semibold mb-1 text-gray-300">镜头控制</h3>
+                <div class="grid grid-cols-2 gap-1 mt-2">
+                    <button id="view-front" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-md text-xs">前</button>
+                    <button id="view-back" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-md text-xs">后</button>
+                    <button id="view-left" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-md text-xs">左</button>
+                    <button id="view-right" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-md text-xs">右</button>
+                    <button id="view-top" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-md text-xs">顶</button>
+                    <button id="view-bottom" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-md text-xs">底</button>
+                </div>
+            </div>
+
+            <div class="mt-3 pt-3 border-t border-gray-700">
+                <h3 class="text-xs font-semibold mb-1 text-gray-300">截图 & 导出</h3>
+                <button id="screenshot-btn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-3 rounded-md text-xs w-full">单视角截图</button>
+                <button id="export-txt-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-3 rounded-md text-xs w-full mt-1.5 disabled:opacity-50">导出为 TXT</button>
+            </div>
+
+            <div class="mt-3 pt-3 border-t border-gray-700">
+                <h3 class="text-xs font-semibold mb-1 text-gray-300">编辑体素</h3>
+                <button id="delete-selection-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-3 rounded-md text-xs w-full mb-1.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled>删除选中</button>
+                <button id="material-inventory-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-3 rounded-md text-xs w-full mb-1.5">选择材质</button>
+                <button id="apply-material-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-3 rounded-md text-xs w-full disabled:opacity-50 disabled:cursor-not-allowed" disabled>应用到选中</button>
+            </div>
+
+            <div class="mt-3 pt-3 border-t border-gray-700">
+                <h3 class="text-xs font-semibold mb-1 text-gray-300">动画渲染</h3>
+                <button id="open-animation-window-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-3 rounded-md text-xs w-full">🎬 动画渲染窗口</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 动画渲染窗口 -->
+    <div id="animation-window">
+        <div id="animation-window-header">
+            <h2 class="text-lg font-semibold text-white">🎬 动画渲染窗口</h2>
+            <button id="close-animation-window-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        <canvas id="animation-window-canvas"></canvas>
+        <div id="animation-controls">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">建筑动画:</label>
+                    <select id="effect-selector" class="w-full bg-gray-700 border border-gray-600 text-white py-2 px-3 rounded-lg">
+                        <option value="magic-gradient">渐变 (Gradient)</option>
+                        <option value="vortex">旋涡 (Vortex)</option>
+                        <option value="ripple">波纹 (Ripple)</option>
+                        <option value="rain-down">天降 (Rain Down)</option>
+                        <option value="ground-up">从地升起 (Ground Up)</option>
+                        <option value="layer-scan">逐层扫描 (Layer Scan)</option>
+                        <option value="assemble">组装 (Assemble)</option>
+                        <option value="simple">闪现 (Simple)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">魔法主题:</label>
+                    <select id="magic-selector" class="w-full bg-gray-700 border border-gray-600 text-white py-2 px-3 rounded-lg">
+                        <option value="rune-energy" selected>符文能量 (绿色)</option>
+                        <option value="fire">烈焰 (红色/橙色)</option>
+                        <option value="ice">寒冰 (蓝色/白色)</option>
+                        <option value="shadow">暗影 (紫色)</option>
+                        <option value="none">无 (None)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-4">
+                <button id="start-animation-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg">开始生成动画</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // ====================================================================
+        // 主窗口 - 基础配置
+        // ====================================================================
+        const VOXEL_RESOLUTION = 32;
+        const GRID_SIZE = 10;
+        const VOXEL_SIZE = GRID_SIZE / VOXEL_RESOLUTION;
+        const DEFAULT_VOXEL_PROPERTIES = { blockId: 1, metaData: 0 };
+        
+        // 全局状态
+        let mainScene, mainCamera, mainRenderer, mainControls;
+        let voxelContainerGroup, selectionHighlightMesh;
+        let loadedModel = null;
+        let currentVoxelCoords = new Set();
+        let voxelProperties = new Map();
+        let selectedVoxelCoords = new Set();
+        let loadedTextures = new Map();
+        
+        // Minecraft 材质定义
+        const DEFAULT_BLOCK_ID_LIST = {
+            "1": { "0": "stone" },
+            "2": { "0": { "top": "grass_top", "bottom": "dirt", "*": "grass_side" } },
+            "3": { "0": "dirt" },
+            "4": { "0": "cobblestone" },
+            "5": { "0": "planks_oak" },
+            "17": { "0": { "top": "log_oak_top", "bottom": "log_oak_top", "*": "log_oak" } },
+            "35": { "0": "wool_colored_white" }
+        };
+        
+        const TEXTURE_KEY_TO_COLOR_MAP = {
+            'stone': 0x888888,
+            'grass_top': 0x74b44a,
+            'grass_side': 0x90ac50,
+            'dirt': 0x8d6b4a,
+            'cobblestone': 0x7a7a7a,
+            'planks_oak': 0xaf8f58,
+            'log_oak': 0x685133,
+            'log_oak_top': 0x9e8054,
+            'wool_colored_white': 0xffffff,
+            'unknown': 0xff00ff
+        };
+
+        // ====================================================================
+        // 主窗口 - 初始化
+        // ====================================================================
+        function initMainWindow() {
+            const mount = document.getElementById('mount');
+            if (!mount) return;
+            
+            mainScene = new THREE.Scene();
+            mainScene.background = new THREE.Color(0x1f2937);
+            
+            mainCamera = new THREE.PerspectiveCamera(75, mount.clientWidth / mount.clientHeight, 0.1, 1000);
+            mainCamera.position.set(GRID_SIZE * 0.8, GRID_SIZE * 0.8, GRID_SIZE * 0.8);
+            
+            mainRenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+            mainRenderer.setSize(mount.clientWidth, mount.clientHeight);
+            mainRenderer.setPixelRatio(window.devicePixelRatio);
+            mainRenderer.shadowMap.enabled = true;
+            mainRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            mount.appendChild(mainRenderer.domElement);
+            
+            mainControls = new THREE.OrbitControls(mainCamera, mainRenderer.domElement);
+            mainControls.enableDamping = true;
+            mainControls.target.set(0, GRID_SIZE / 2, 0);
+            mainControls.update();
+            
+            mainScene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            directionalLight.position.set(GRID_SIZE, GRID_SIZE * 1.5, GRID_SIZE * 0.5);
+            directionalLight.castShadow = true;
+            mainScene.add(directionalLight);
+            
+            const gridHelper = new THREE.GridHelper(GRID_SIZE, VOXEL_RESOLUTION, 0x555555, 0x333333);
+            mainScene.add(gridHelper);
+            
+            voxelContainerGroup = new THREE.Group();
+            mainScene.add(voxelContainerGroup);
+            
+            const highlightGeometry = new THREE.BoxGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
+            const highlightMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+            selectionHighlightMesh = new THREE.InstancedMesh(highlightGeometry, highlightMaterial, VOXEL_RESOLUTION ** 3);
+            selectionHighlightMesh.count = 0;
+            mainScene.add(selectionHighlightMesh);
+            
+            animateMainWindow();
+        }
+        
+        function animateMainWindow() {
+            requestAnimationFrame(animateMainWindow);
+            mainControls.update();
+            mainRenderer.render(mainScene, mainCamera);
+        }
+        
+        window.addEventListener('resize', () => {
+            const mount = document.getElementById('mount');
+            if (!mount) return;
+            const width = mount.clientWidth;
+            const height = mount.clientHeight;
+            mainRenderer.setSize(width, height);
+            mainCamera.aspect = width / height;
+            mainCamera.updateProjectionMatrix();
+        });
+
+        // ====================================================================
+        // 体素显示
+        // ====================================================================
+        function getTextureKeyForVoxel(blockId, metaData, blockDefs) {
+            const blockEntry = blockDefs[blockId.toString()];
+            if (!blockEntry) return 'unknown';
+            const metaEntry = blockEntry[metaData.toString()];
+            if (!metaEntry) return 'unknown';
+            if (typeof metaEntry === 'string') return metaEntry.split(':')[0];
+            if (typeof metaEntry === 'object' && metaEntry !== null) {
+                const key = metaEntry['*'] || metaEntry.top || metaEntry.side || 'unknown';
+                return key.split(':')[0];
+            }
+            return 'unknown';
+        }
+        
+        function displayVoxels() {
+            if (!voxelContainerGroup) return;
+            while (voxelContainerGroup.children.length > 0) {
+                const child = voxelContainerGroup.children[0];
+                voxelContainerGroup.remove(child);
+                child.geometry.dispose();
+                if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                else child.material.dispose();
+            }
+            
+            if (currentVoxelCoords.size === 0) return;
+            
+            const materialToInstancesMap = new Map();
+            currentVoxelCoords.forEach(coordString => {
+                const voxelProps = voxelProperties.get(coordString) || DEFAULT_VOXEL_PROPERTIES;
+                const textureKey = getTextureKeyForVoxel(voxelProps.blockId, voxelProps.metaData, DEFAULT_BLOCK_ID_LIST);
+                if (!materialToInstancesMap.has(textureKey)) materialToInstancesMap.set(textureKey, []);
+                const [x, y, z] = coordString.split(',').map(Number);
+                const halfGrid = GRID_SIZE / 2;
+                const posX = -halfGrid + (x + 0.5) * VOXEL_SIZE;
+                const posY = (y + 0.5) * VOXEL_SIZE;
+                const posZ = -halfGrid + (z + 0.5) * VOXEL_SIZE;
+                const matrix = new THREE.Matrix4().setPosition(posX, posY, posZ);
+                materialToInstancesMap.get(textureKey).push({ matrix, coord: coordString });
+            });
+            
+            const baseVoxelGeometry = new THREE.BoxGeometry(VOXEL_SIZE * 0.98, VOXEL_SIZE * 0.98, VOXEL_SIZE * 0.98);
+            materialToInstancesMap.forEach((instances, textureKey) => {
+                if (instances.length === 0) return;
+                let material;
+                const texture = loadedTextures.get(textureKey);
+                if (texture) {
+                    material = new THREE.MeshStandardMaterial({ map: texture, metalness: 0.1, roughness: 0.8 });
+                } else {
+                    const color = TEXTURE_KEY_TO_COLOR_MAP[textureKey] || TEXTURE_KEY_TO_COLOR_MAP['unknown'];
+                    material = new THREE.MeshLambertMaterial({ color });
+                }
+                const instancedMesh = new THREE.InstancedMesh(baseVoxelGeometry, material, instances.length);
+                instancedMesh.castShadow = true;
+                instancedMesh.receiveShadow = true;
+                const coordMapForMesh = [];
+                instances.forEach((instanceData, i) => {
+                    instancedMesh.setMatrixAt(i, instanceData.matrix);
+                    coordMapForMesh[i] = instanceData.coord;
+                });
+                instancedMesh.instanceMatrix.needsUpdate = true;
+                instancedMesh.userData = { coordMap: coordMapForMesh };
+                voxelContainerGroup.add(instancedMesh);
+            });
+        }
+
+        // ====================================================================
+        // 动画渲染窗口
+        // ====================================================================
+        let animScene, animCamera, animRenderer, animControls;
+        let animBlockGroup, animParticleSystem;
+        const animParticles = [];
+        let isAnimationPlaying = false;
+        let currentEffect = 'magic-gradient';
+        let currentMagicTheme = 'rune-energy';
+        
+        function initAnimationWindow() {
+            const canvas = document.getElementById('animation-window-canvas');
+            const animWindow = document.getElementById('animation-window');
+            
+            // 场景设置
+            animScene = new THREE.Scene();
+            animScene.background = new THREE.Color(0x87CEEB);
+            animScene.fog = new THREE.Fog(0x87CEEB, 20, 50);
+            
+            animCamera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+            animCamera.position.set(0, 5, 10);
+            
+            animRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            animRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            animRenderer.setPixelRatio(window.devicePixelRatio);
+            
+            animControls = new THREE.OrbitControls(animCamera, canvas);
+            animControls.enableDamping = true;
+            animControls.dampingFactor = 0.05;
+            animControls.maxPolarAngle = Math.PI / 2 - 0.05;
+            animControls.minDistance = 2;
+            animControls.maxDistance = 60;
+            animControls.target.set(0, 0, 0);
+            
+            const ambientLight = new THREE.AmbientLight(0xcccccc, 0.8);
+            animScene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(10, 20, 5);
+            directionalLight.castShadow = true;
+            animScene.add(directionalLight);
+            
+            // 创建平坦地面
+            createFlatGround();
+            
+            // 创建云朵
+            createClouds();
+            
+            // 建筑组
+            animBlockGroup = new THREE.Group();
+            animScene.add(animBlockGroup);
+            
+            // 粒子系统
+            const particleGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(2000 * 3);
+            const colors = new Float32Array(2000 * 3);
+            const sizes = new Float32Array(2000);
+            for (let i = 0; i < 2000; i++) { sizes[i] = 1; }
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            particleGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            const particleMaterial = new THREE.PointsMaterial({ 
+                size: 0.1, 
+                sizeAttenuation: true, 
+                vertexColors: true, 
+                transparent: true, 
+                blending: THREE.AdditiveBlending, 
+                depthWrite: false 
+            });
+            animParticleSystem = new THREE.Points(particleGeometry, particleMaterial);
+            animParticleSystem.visible = false;
+            animScene.add(animParticleSystem);
+        }
+        
+        function createFlatGround() {
+            const groundSize = 50;
+            const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
+            
+            // 简单的草地纹理
+            const grassTopMaterial = new THREE.MeshLambertMaterial({ color: 0x74b44a });
+            const dirtMaterial = new THREE.MeshLambertMaterial({ color: 0x8d6b4a });
+            const grassSideMaterial = new THREE.MeshLambertMaterial({ color: 0x90ac50 });
+            
+            const groundBlockMaterials = [
+                grassSideMaterial,
+                grassSideMaterial,
+                grassTopMaterial,
+                dirtMaterial,
+                grassSideMaterial,
+                grassSideMaterial
+            ];
+            
+            const groundMesh = new THREE.InstancedMesh(blockGeometry, groundBlockMaterials, groundSize * groundSize);
+            const dummy = new THREE.Object3D();
+            let index = 0;
+            for (let x = -groundSize / 2; x < groundSize / 2; x++) {
+                for (let z = -groundSize / 2; z < groundSize / 2; z++) {
+                    dummy.position.set(x + 0.5, -0.5, z + 0.5);
+                    dummy.updateMatrix();
+                    groundMesh.setMatrixAt(index++, dummy.matrix);
+                }
+            }
+            animScene.add(groundMesh);
+        }
+        
+        function createClouds() {
+            const cloudGroup = new THREE.Group();
+            const cloudBlockGeo = new THREE.BoxGeometry(1, 1, 1);
+            const cloudMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            
+            for (let i = 0; i < 15; i++) {
+                const cloud = new THREE.Group();
+                for (let j = 0; j < (Math.floor(Math.random() * 6) + 4); j++) {
+                    const block = new THREE.Mesh(cloudBlockGeo, cloudMaterial);
+                    block.position.set(
+                        (Math.random() - 0.5) * 5,
+                        (Math.random() - 0.5) * 1.5,
+                        (Math.random() - 0.5) * 3
+                    );
+                    block.scale.set(
+                        Math.random() * 0.5 + 1,
+                        Math.random() * 0.5 + 1,
+                        Math.random() * 0.5 + 1
+                    );
+                    cloud.add(block);
+                }
+                cloud.position.set(
+                    (Math.random() - 0.5) * 50 * 1.5,
+                    Math.random() * 5 + 20,
+                    (Math.random() - 0.5) * 50 * 1.5
+                );
+                cloudGroup.add(cloud);
+            }
+            animScene.add(cloudGroup);
+            
+            // 云朵动画
+            function animateClouds() {
+                if (!document.getElementById('animation-window').style.display || 
+                    document.getElementById('animation-window').style.display === 'none') return;
+                cloudGroup.children.forEach(cloud => {
+                    cloud.position.x += 0.01;
+                    if (cloud.position.x > 50) {
+                        cloud.position.x = -50;
+                        cloud.position.z = (Math.random() - 0.5) * 50 * 1.5;
+                    }
+                });
+                requestAnimationFrame(animateClouds);
+            }
+            animateClouds();
+        }
+        
+        function animateAnimationWindow() {
+            if (!animRenderer) return;
+            requestAnimationFrame(animateAnimationWindow);
+            
+            if (animParticleSystem.visible) updateParticles();
+            
+            animControls.update();
+            animRenderer.render(animScene, animCamera);
+        }
+        
+        // 粒子更新
+        function updateParticles() {
+            const positions = animParticleSystem.geometry.attributes.position.array;
+            const colors = animParticleSystem.geometry.attributes.color.array;
+            const sizes = animParticleSystem.geometry.attributes.size.array;
+            
+            for (let i = 0; i < animParticles.length; i++) {
+                const p = animParticles[i];
+                if (p.life <= 0) continue;
+                
+                p.velocity.y -= p.gravity;
+                p.position.add(p.velocity);
+                p.life -= 0.01;
+                p.opacity = p.life / p.maxLife;
+                
+                if (p.life <= 0) {
+                    positions[i * 3 + 1] = -100;
+                } else {
+                    positions[i * 3] = p.position.x;
+                    positions[i * 3 + 1] = p.position.y;
+                    positions[i * 3 + 2] = p.position.z;
+                    colors[i * 3] = p.color.r * p.opacity;
+                    colors[i * 3 + 1] = p.color.g * p.opacity;
+                    colors[i * 3 + 2] = p.color.b * p.opacity;
+                    sizes[i] = p.size * p.opacity;
+                }
+            }
+            
+            animParticleSystem.geometry.attributes.position.needsUpdate = true;
+            animParticleSystem.geometry.attributes.color.needsUpdate = true;
+            animParticleSystem.geometry.attributes.size.needsUpdate = true;
+        }
+        
+        // 发射粒子
+        function emitParticles(blockData, theme) {
+            const numToEmit = 20;
+            let colorBase, velY, life, gravity;
+            
+            switch (theme) {
+                case 'fire':
+                    colorBase = 0xff8800;
+                    velY = [0.08, 0.12];
+                    life = [0.6, 1.0];
+                    gravity = 0.0005;
+                    break;
+                case 'ice':
+                    colorBase = 0x88ccff;
+                    velY = [0.01, 0.05];
+                    life = [1.0, 1.5];
+                    gravity = 0.0015;
+                    break;
+                case 'shadow':
+                    colorBase = 0xcc88ff;
+                    velY = [0.03, 0.08];
+                    life = [1.0, 1.2];
+                    gravity = 0.0008;
+                    break;
+                case 'rune-energy':
+                default:
+                    colorBase = 0x88ff88;
+                    velY = [0.08, 0.12];
+                    life = [0.8, 1.2];
+                    gravity = 0.001;
+                    break;
+            }
+            
+            for (let i = 0; i < numToEmit; i++) {
+                let foundParticle = false;
+                for (let j = 0; j < animParticles.length; j++) {
+                    if (animParticles[j].life <= 0) {
+                        const p = animParticles[j];
+                        p.position.set(blockData.x, blockData.y, blockData.z);
+                        p.velocity.set(
+                            (Math.random() - 0.5) * 0.05,
+                            velY[0] + Math.random() * (velY[1] - velY[0]),
+                            (Math.random() - 0.5) * 0.05
+                        );
+                        p.color = new THREE.Color(colorBase).multiplyScalar(0.7 + Math.random() * 0.3);
+                        p.maxLife = p.life = life[0] + Math.random() * (life[1] - life[0]);
+                        p.size = 1 + Math.random() * 2;
+                        p.gravity = gravity;
+                        foundParticle = true;
+                        break;
+                    }
+                }
+                if (!foundParticle && animParticles.length < 2000) {
+                    const p = {
+                        position: new THREE.Vector3(blockData.x, blockData.y, blockData.z),
+                        velocity: new THREE.Vector3(
+                            (Math.random() - 0.5) * 0.05,
+                            velY[0] + Math.random() * (velY[1] - velY[0]),
+                            (Math.random() - 0.5) * 0.05
+                        ),
+                        color: new THREE.Color(colorBase).multiplyScalar(0.7 + Math.random() * 0.3),
+                        maxLife: life[0] + Math.random() * (life[1] - life[0]),
+                        life: life[0] + Math.random() * (life[1] - life[0]),
+                        size: 1 + Math.random() * 2,
+                        opacity: 1,
+                        gravity: gravity
+                    };
+                    animParticles.push(p);
+                }
+            }
+        }
+        
+        // 魔法主题应用
+        function applyMagicTheme(block, blockData, magicTheme) {
+            if (magicTheme === 'none') return;
+            
+            emitParticles(blockData, magicTheme);
+            animateGlow(block, magicTheme);
+        }
+        
+        // 光辉动画
+        function animateGlow(block, theme) {
+            if (!block.material.clone) return;
+            block.material = block.material.clone();
+            
+            let emissiveColor;
+            switch (theme) {
+                case 'fire': emissiveColor = 0xff8800; break;
+                case 'ice': emissiveColor = 0x88ccff; break;
+                case 'shadow': emissiveColor = 0xcc88ff; break;
+                case 'rune-energy':
+                default: emissiveColor = 0x88ff88; break;
+            }
+            block.material.emissive = new THREE.Color(emissiveColor);
+            block.material.emissiveIntensity = 0;
+            
+            let progress = 0, duration = 800, startTime = Date.now();
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                progress = Math.min(1, elapsed / duration);
+                if (progress < 0.5) {
+                    block.material.emissiveIntensity = progress * 2;
+                } else {
+                    block.material.emissiveIntensity = (1 - progress) * 2;
+                }
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    block.material.emissiveIntensity = 0;
+                }
+            }
+            animate();
+        }
+        
+        // 从主窗口同步体素数据到动画窗口
+        function syncVoxelsToAnimationWindow() {
+            if (!animBlockGroup) return;
+            
+            // 清空现有方块
+            while (animBlockGroup.children.length > 0) {
+                animBlockGroup.remove(animBlockGroup.children[0]);
+            }
+            
+            // 隐藏粒子系统
+            animParticleSystem.visible = (currentMagicTheme !== 'none');
+            
+            // 转换体素数据为动画窗口格式
+            const schematicData = [];
+            currentVoxelCoords.forEach(coordString => {
+                const [x, y, z] = coordString.split(',').map(Number);
+                const voxelProps = voxelProperties.get(coordString) || DEFAULT_VOXEL_PROPERTIES;
+                const textureKey = getTextureKeyForVoxel(voxelProps.blockId, voxelProps.metaData, DEFAULT_BLOCK_ID_LIST);
+                const color = TEXTURE_KEY_TO_COLOR_MAP[textureKey] || TEXTURE_KEY_TO_COLOR_MAP['unknown'];
+                
+                // 转换坐标系统
+                const halfGrid = GRID_SIZE / 2;
+                const worldX = -halfGrid + (x + 0.5) * VOXEL_SIZE;
+                const worldY = (y + 0.5) * VOXEL_SIZE;
+                const worldZ = -halfGrid + (z + 0.5) * VOXEL_SIZE;
+                
+                schematicData.push({
+                    x: worldX / VOXEL_SIZE,
+                    y: worldY / VOXEL_SIZE,
+                    z: worldZ / VOXEL_SIZE,
+                    color: color
+                });
+            });
+            
+            return schematicData;
+        }
+        
+        // 动画效果实现
+        function animateBlock_MagicGradient(blockData, baseColor) {
+            const blockGeometry = new THREE.BoxGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
+            const blockMaterial = new THREE.MeshLambertMaterial({ color: baseColor, transparent: true, opacity: 0.01 });
+            const block = new THREE.Mesh(blockGeometry, blockMaterial);
+            block.position.set(blockData.x * VOXEL_SIZE, blockData.y * VOXEL_SIZE, blockData.z * VOXEL_SIZE);
+            block.scale.set(0.8, 0.8, 0.8);
+            animBlockGroup.add(block);
+            
+            let progress = 0, duration = 1000, startTime = Date.now();
+            const startScale = block.scale.clone();
+            const targetScale = new THREE.Vector3(1, 1, 1);
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                progress = Math.min(1, elapsed / duration);
+                const easedProgress = Math.pow(progress, 2);
+                block.material.opacity = 0.01 + 0.99 * easedProgress;
+                block.scale.lerpVectors(startScale, targetScale, easedProgress);
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    block.material.opacity = 1;
+                    block.scale.set(1, 1, 1);
+                }
+            }
+            animate();
+            return block;
+        }
+        
+        function animateBlock_Simple(blockData, baseColor) {
+            const blockGeometry = new THREE.BoxGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
+            const blockMaterial = new THREE.MeshLambertMaterial({ color: baseColor });
+            const block = new THREE.Mesh(blockGeometry, blockMaterial);
+            block.position.set(blockData.x * VOXEL_SIZE, blockData.y * VOXEL_SIZE, blockData.z * VOXEL_SIZE);
+            block.scale.set(0, 0, 0);
+            animBlockGroup.add(block);
+            
+            let progress = 0, duration = 100, startTime = Date.now();
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                progress = Math.min(1, elapsed / duration);
+                block.scale.set(progress, progress, progress);
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            animate();
+            return block;
+        }
+        
+        // 启动动画
+        function startBuildAnimation() {
+            if (isAnimationPlaying) return;
+            isAnimationPlaying = true;
+            
+            const schematicData = syncVoxelsToAnimationWindow();
+            if (schematicData.length === 0) {
+                alert('没有体素数据可以动画！');
+                isAnimationPlaying = false;
+                return;
+            }
+            
+            // 随机打乱顺序
+            const shuffledData = [...schematicData].sort(() => Math.random() - 0.5);
+            let blockIndex = 0;
+            
+            function placeNextBlock() {
+                if (blockIndex >= shuffledData.length) {
+                    isAnimationPlaying = false;
+                    return;
+                }
+                
+                const blockData = shuffledData[blockIndex];
+                const block = animateBlock_MagicGradient(blockData, blockData.color);
+                applyMagicTheme(block, blockData, currentMagicTheme);
+                
+                blockIndex++;
+                setTimeout(placeNextBlock, 30);
+            }
+            
+            placeNextBlock();
+        }
+
+        // ====================================================================
+        // 事件处理
+        // ====================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化主窗口
+            initMainWindow();
+            
+            // 测试数据 - 创建一个简单的房子
+            for (let x = -3; x <= 2; x++) {
+                for (let z = -3; z <= 2; z++) {
+                    const coord = `${x + 16},${0},${z + 16}`;
+                    currentVoxelCoords.add(coord);
+                    voxelProperties.set(coord, { blockId: 5, metaData: 0 });
+                }
+            }
+            for (let y = 1; y <= 2; y++) {
+                for (let x = -3; x <= 2; x++) {
+                    let coord = `${x + 16},${y},${-3 + 16}`;
+                    currentVoxelCoords.add(coord);
+                    voxelProperties.set(coord, { blockId: 4, metaData: 0 });
+                    
+                    coord = `${x + 16},${y},${2 + 16}`;
+                    currentVoxelCoords.add(coord);
+                    voxelProperties.set(coord, { blockId: 4, metaData: 0 });
+                }
+                for (let z = -2; z <= 1; z++) {
+                    let coord = `${-3 + 16},${y},${z + 16}`;
+                    currentVoxelCoords.add(coord);
+                    voxelProperties.set(coord, { blockId: 4, metaData: 0 });
+                    
+                    coord = `${2 + 16},${y},${z + 16}`;
+                    currentVoxelCoords.add(coord);
+                    voxelProperties.set(coord, { blockId: 4, metaData: 0 });
+                }
+            }
+            displayVoxels();
+            
+            // 动画窗口按钮
+            document.getElementById('open-animation-window-btn').addEventListener('click', () => {
+                const animWindow = document.getElementById('animation-window');
+                animWindow.style.display = 'block';
+                
+                if (!animRenderer) {
+                    initAnimationWindow();
+                    animateAnimationWindow();
+                }
+                
+                // 调整canvas大小
+                const canvas = document.getElementById('animation-window-canvas');
+                animRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+                animCamera.aspect = canvas.clientWidth / canvas.clientHeight;
+                animCamera.updateProjectionMatrix();
+            });
+            
+            document.getElementById('close-animation-window-btn').addEventListener('click', () => {
+                document.getElementById('animation-window').style.display = 'none';
+            });
+            
+            document.getElementById('effect-selector').addEventListener('change', (e) => {
+                currentEffect = e.target.value;
+            });
+            
+            document.getElementById('magic-selector').addEventListener('change', (e) => {
+                currentMagicTheme = e.target.value;
+            });
+            
+            document.getElementById('start-animation-btn').addEventListener('click', () => {
+                startBuildAnimation();
+            });
+            
+            // 镜头控制
+            document.getElementById('view-front').addEventListener('click', () => {
+                mainCamera.position.set(0, GRID_SIZE / 2, GRID_SIZE * 1.5);
+                mainCamera.lookAt(0, GRID_SIZE / 2, 0);
+                mainControls.target.set(0, GRID_SIZE / 2, 0);
+                mainControls.update();
+            });
+        });
+    </script>
+</body>
+</html>
