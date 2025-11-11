@@ -5,7 +5,7 @@ disable_auth = false
 
 [cerebrium.hardware]
 compute = "ADA_L40"
-cpu = 16
+cpu = 11
 memory = 48.0
 
 [cerebrium.scaling]
