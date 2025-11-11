@@ -1,0 +1,36 @@
+[cerebrium.deployment]
+name = "wan22-ti2v"
+python_version = "3.11"
+disable_auth = false
+
+[cerebrium.hardware]
+compute = "AMPERE_A10"
+cpu = 8
+memory = 32.0
+
+[cerebrium.scaling]
+min_replicas = 0
+cooldown = 0
+
+[cerebrium.volumes]
+persistent-storage = "/persistent-storage"
+
+[cerebrium.dependencies]
+
+[cerebrium.dependencies.apt]
+ffmpeg = "latest"
+libgl1 = "latest"
+
+[cerebrium.dependencies.pip]
+torch = "2.2.0"
+torchvision = "0.17.0"
+diffusers = "0.32.0"
+transformers = "4.44.2"
+accelerate = "0.34.2"
+sentencepiece = "0.2.0"
+safetensors = "0.4.5"
+numpy = "1.26.4"
+requests = "2.32.3"
+pydantic = "2.8.2"
+imageio = "2.34.1"
+imageio-ffmpeg = "0.4.9"

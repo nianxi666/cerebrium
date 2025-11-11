@@ -1,0 +1,21 @@
+[cerebrium.deployment]
+name = "sdxl-lightning"
+python_version = "3.11"
+disable_auth = true
+
+[cerebrium.hardware]
+compute = "AMPERE_A10"
+cpu = 8
+memory = 64.0
+
+[cerebrium.scaling]
+min_replicas = 0
+cooldown = 0
+
+[cerebrium.dependencies.pip]
+torch = "2.1.0"
+diffusers = "0.27.2"
+transformers = "4.38.2"
+accelerate = "0.28.0"
+safetensors = "0.4.2"
+invisible-watermark = "0.2.0"
