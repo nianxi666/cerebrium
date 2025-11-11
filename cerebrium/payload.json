@@ -1,0 +1,7 @@
+{
+  "video_url": "https://github.com/anotherjesse/LatentSync/raw/main/assets/yuxin.mp4",
+  "audio_url": "https://github.com/anotherjesse/LatentSync/raw/main/assets/audio_yuxin.wav",
+  "guidance_scale": 1.5,
+  "inference_steps": 20,
+  "seed": 1247
+}

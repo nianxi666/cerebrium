@@ -1,0 +1,12 @@
+torch==2.1.2
+torchvision==0.16.2
+diffusers==0.31.0
+transformers==4.42.0
+accelerate==0.32.0
+sentencepiece==0.2.0
+safetensors==0.4.5
+numpy==1.26.4
+requests==2.32.3
+pydantic==2.8.2
+imageio==2.34.1
+imageio-ffmpeg==0.4.9

@@ -1,0 +1,231 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║               🎬 Wan2.2 Text-Image-to-Video (TI2V) 项目                      ║
+║                          Cerebrium AI 部署版本                               ║
+║                                                                              ║
+║                            ✅ 部署完成！                                     ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📌 项目状态
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ 应用已成功部署到 Cerebrium AI
+✅ GPU: ADA L40 (48 GB VRAM) - 升级完成
+✅ 性能: 相比 A10 提升 2 倍
+✅ API: 完整就绪并运行中
+
+🔌 API 端点
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+基础 URL: https://api.aws.us-east-1.cerebrium.ai/v4/p-194bc83f/wan22-ti2v/predict
+项目 ID:  p-194bc83f
+应用名:   wan22-ti2v
+仪表板:   https://dashboard.cerebrium.ai/projects/p-194bc83f
+
+🚀 三种快速开始方式
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣  WEB UI (推荐) - 无需编程
+   ↓ 打开: index.html
+   ↓ 在浏览器中打开即可使用
+
+2️⃣  Python 脚本 - 自动化
+   ↓ 设置: export CEREBRIUM_API_KEY="your-key"
+   ↓ 运行: python3 test_inference.py
+
+3️⃣  cURL 命令 - 快速测试
+   ↓ 参考: API_USAGE_GUIDE.md
+   ↓ 示例: curl -X POST ... (见文档)
+
+📚 文档导航
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 快速开始 (5 分钟)
+   → QUICK_START.md
+
+📖 完整 API 文档
+   → API_USAGE_GUIDE.md
+
+📝 项目介绍 (中文)
+   → README_CN.md
+
+🎨 Web 用户界面
+   → index.html
+
+🐍 Python 脚本示例
+   → test_inference.py
+
+📋 文件导航指南
+   → FILES_OVERVIEW.md
+
+📊 项目完成总结
+   → PROJECT_SUMMARY.md
+
+✅ 部署详情
+   → DEPLOYMENT_SUCCESS.md
+
+💡 快速使用示例
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【方式 1】Web UI (最简单)
+┌─────────────────────────────────────────────────┐
+│ 1. 用浏览器打开 index.html                       │
+│ 2. 输入你的 API Key                             │
+│ 3. 选择生成模式 (T2V 或 TI2V)                   │
+│ 4. 点击"生成视频"                              │
+│ 5. 等待 3-5 分钟...                            │
+│ 6. 下载或播放视频                              │
+└─────────────────────────────────────────────────┘
+
+【方式 2】Python 脚本
+┌─────────────────────────────────────────────────┐
+│ $ export CEREBRIUM_API_KEY="your-key"          │
+│ $ python3 test_inference.py                    │
+│ ✅ 视频已保存到 /tmp/test_output_*.mp4         │
+└─────────────────────────────────────────────────┘
+
+【方式 3】cURL 命令
+┌─────────────────────────────────────────────────┐
+│ $ curl -X POST \                                │
+│     https://api.../wan22-ti2v/predict \        │
+│     -H "Authorization: Bearer YOUR_KEY" \      │
+│     -H "Content-Type: application/json" \      │
+│     -d '{"prompt":"cat dancing on stage"}'    │
+└─────────────────────────────────────────────────┘
+
+⚙️  推荐参数设置
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【快速生成】(2-3 分钟)
+  - num_frames: 25
+  - num_inference_steps: 20
+  - guidance_scale: 5.0
+
+【均衡配置】(3-5 分钟) ⭐ 推荐
+  - num_frames: 121
+  - num_inference_steps: 30
+  - guidance_scale: 7.5
+
+【高质量】(8-12 分钟)
+  - num_frames: 121
+  - num_inference_steps: 50
+  - guidance_scale: 10.0
+
+📊 硬件规格
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GPU:      ADA L40 (48 GB VRAM)
+CPU:      11 cores
+内存:     48 GB
+推理引擎: PyTorch 2.3.1
+模型库:   Diffusers 0.33.1
+
+💡 最佳提示词示例
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ 好的提示词:
+"A girl walking through a misty forest at dawn, golden sunlight 
+filtering through trees, birds chirping, ultra high quality, 4K, 
+cinematic lighting, depth of field"
+
+❌ 不好的提示词:
+"girl, forest"
+
+🔒 安全建议
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ 使用环境变量存储 API Key
+✅ 不要在代码中硬编码 Key
+✅ 定期轮换 API Key
+✅ 使用 HTTPS (已配置)
+
+🆘 遇到问题？
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【问题】401 Unauthorized
+→ 检查 API Key 是否正确设置
+
+【问题】Timeout
+→ 减少推理步数或帧数
+
+【问题】400 Bad Request
+→ 检查参数格式，num_frames 必须是 4n+1 格式
+
+【问题】视频质量差
+→ 增加推理步数和指导尺度
+
+更多帮助 → 查看 QUICK_START.md 的故障排除部分
+
+🎓 文档阅读顺序
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【初级用户】(5 分钟)
+  1. 本文件 (START_HERE.txt)
+  2. QUICK_START.md
+  3. 打开 index.html
+
+【开发者】(30 分钟)
+  1. README_CN.md
+  2. API_USAGE_GUIDE.md
+  3. test_inference.py
+  4. FILES_OVERVIEW.md
+
+【运维人员】(1 小时)
+  1. DEPLOYMENT_SUCCESS.md
+  2. PROJECT_SUMMARY.md
+  3. README_CN.md (部署部分)
+
+📁 项目文件清单
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【文档】(7 个 MD 文件)
+  📄 START_HERE.txt                 ← 你现在在这里！
+  📄 QUICK_START.md                 ← 快速开始
+  📄 API_USAGE_GUIDE.md             ← API 完整文档
+  📄 README_CN.md                   ← 项目介绍
+  📄 FILES_OVERVIEW.md              ← 文件导航
+  📄 PROJECT_SUMMARY.md             ← 项目总结
+  📄 DEPLOYMENT_SUCCESS.md          ← 部署详情
+
+【工具】
+  🛠️  index.html                    ← Web UI
+  🐍 test_inference.py             ← Python 脚本
+
+【部署源代码】
+  📦 cerebrium/                     ← 完整项目代码
+
+✨ 开始使用 - 选择你的方式
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【现在就开始】
+  👉 打开 index.html (在浏览器中)
+  
+【想学习 API】
+  👉 阅读 QUICK_START.md (5 分钟)
+  👉 阅读 API_USAGE_GUIDE.md (完整)
+
+【查看示例代码】
+  👉 查看 test_inference.py (Python)
+  👉 查看 index.html (JavaScript)
+
+【了解项目】
+  👉 阅读 README_CN.md (全面介绍)
+  👉 阅读 PROJECT_SUMMARY.md (完成情况)
+
+🎉 准备好了吗？
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+选择一个开始吧：
+
+1. 【最简单】打开浏览器 → index.html
+2. 【最快】查看 QUICK_START.md
+3. 【最完整】阅读 README_CN.md
+
+祝你使用愉快！🚀
+
+═══════════════════════════════════════════════════════════════════════════════
+最后更新: 2024-11-11
+状态: ✅ 完全就绪
+API: 🟢 Live
+═══════════════════════════════════════════════════════════════════════════════
