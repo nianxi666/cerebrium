@@ -7,7 +7,7 @@ from typing import Optional
 
 import requests
 import torch
-from diffusers import AutoencoderKLWan, UniPCMultistepScheduler, WanPipeline
+from diffusers import UniPCMultistepScheduler, DiffusionPipeline
 from diffusers.utils import export_to_video, load_image
 from pydantic import BaseModel, Field, field_validator
 
@@ -20,7 +20,7 @@ DEFAULT_NEGATIVE_PROMPT = (
 )
 WAN_ENABLE_CPU_OFFLOAD = os.getenv("WAN_ENABLE_CPU_OFFLOAD", "false").lower() in {"1", "true", "yes"}
 
-PIPELINE: Optional[WanPipeline] = None
+PIPELINE: Optional[DiffusionPipeline] = None
 CURRENT_MODEL_ID: Optional[str] = None
 CURRENT_OFFLOAD_STATE: Optional[bool] = None
 PIPELINE_DEVICE: Optional[torch.device] = None
@@ -95,14 +95,8 @@ def setup(model_id: str, use_cpu_offload: bool) -> None:
 
     dtype = _resolve_dtype()
 
-    vae = AutoencoderKLWan.from_pretrained(
+    pipeline = DiffusionPipeline.from_pretrained(
         model_id,
-        subfolder="vae",
-        torch_dtype=torch.float32,
-    )
-    pipeline = WanPipeline.from_pretrained(
-        model_id,
-        vae=vae,
         torch_dtype=dtype,
         low_cpu_mem_usage=True,
     )
