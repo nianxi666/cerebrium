@@ -11,10 +11,11 @@
 - **Dashboard**: https://dashboard.cerebrium.ai/projects/p-194bc83f/apps/p-194bc83f-wan22-ti2v
 
 ## Deployment Configuration
-- **Hardware**: AMPERE_A10 (24 GB GPU)
-- **CPU**: 8 cores
-- **Memory**: 32 GB
+- **Hardware**: ADA L40 (48 GB GPU) - Upgraded from AMPERE_A10 (24 GB)
+- **CPU**: 11 cores
+- **Memory**: 48 GB
 - **Python Version**: 3.11
+- **Performance**: 2x VRAM and significantly better compute compared to A10
 
 ## Key Dependencies
 - PyTorch 2.3.1
@@ -45,8 +46,9 @@ curl -X POST https://api.aws.us-east-1.cerebrium.ai/v4/p-194bc83f/wan22-ti2v/pre
   }'
 ```
 
-## Deployment Date
-2024-11-11 02:06
+## Deployment History
+- **Initial Deployment**: 2024-11-11 02:06 (AMPERE_A10, 24GB)
+- **Hardware Upgrade**: 2024-11-11 02:35 (ADA L40, 48GB) - Successfully upgraded to 2x VRAM
 
 ## Notes
 - Service account token authentication enabled
