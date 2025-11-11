@@ -4,7 +4,7 @@ python_version = "3.11"
 disable_auth = false
 
 [cerebrium.hardware]
-compute = "HOPPER_H100"
+compute = "AMPERE_A100"
 cpu = 16
 memory = 60.0
 
