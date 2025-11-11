@@ -1,0 +1,207 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║                   ✅ 重新部署完整指南                                          ║
+║                                                                                ║
+║              如果应用被删除，这是快速恢复的方法                                 ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+⚡ 最快方式 (推荐) - 一个命令解决
+═══════════════════════════════════════════════════════════════════════════════
+
+$ export CEREBRIUM_SERVICE_ACCOUNT_TOKEN="your-token" && \
+  cd cerebrium && \
+  pip install --upgrade cerebrium --break-system-packages -q && \
+  cerebrium deploy --disable-syntax-check -y
+
+
+🚀 使用快速部署脚本
+═══════════════════════════════════════════════════════════════════════════════
+
+$ export CEREBRIUM_SERVICE_ACCOUNT_TOKEN="your-token"
+$ ./quick_redeploy.sh
+
+
+📚 详细文档
+═══════════════════════════════════════════════════════════════════════════════
+
+选择适合你的：
+
+1. 🟢 最快入门
+   → QUICK_REDEPLOY_README.md (3 分钟阅读)
+
+2. 🟡 标准部署
+   → REDEPLOY_GUIDE.md (10 分钟阅读)
+
+3. 🔵 完整参考
+   → QUICK_START.md 或 API_USAGE_GUIDE.md
+
+
+🔑 凭据设置
+═══════════════════════════════════════════════════════════════════════════════
+
+方式 1: 命令行设置 (临时)
+  $ export CEREBRIUM_SERVICE_ACCOUNT_TOKEN="your-token"
+
+方式 2: .env 文件 (永久)
+  $ echo 'CEREBRIUM_SERVICE_ACCOUNT_TOKEN=your-token' > cerebrium/.env
+
+方式 3: API Key
+  $ export CEREBRIUM_API_KEY="your-api-key"
+
+
+📊 应用信息
+═══════════════════════════════════════════════════════════════════════════════
+
+应用名称:     wan22-ti2v
+项目 ID:      p-194bc83f
+GPU:          ADA L40 (48 GB)
+部署时间:     5-8 分钟
+API:          https://api.aws.us-east-1.cerebrium.ai/v4/p-194bc83f/wan22-ti2v
+仪表板:       https://dashboard.cerebrium.ai/projects/p-194bc83f
+
+
+✅ 部署成功标志
+═══════════════════════════════════════════════════════════════════════════════
+
+看到以下输出表示部署成功:
+
+  ╭─────────────────────────  wan22-ti2v is now live!   ──────────────────────╮
+  │ App Dashboard:                                                             │
+  │ https://dashboard.cerebrium.ai/projects/p-194bc83f/apps/p-194bc83f-wan22-ti2v
+  │                                                                            │
+  │ Endpoints:                                                                 │
+  │ POST https://api.aws.us-east-1.cerebrium.ai/v4/p-194bc83f/wan22-ti2v/...  │
+  ╰────────────────────────────────────────────────────────────────────────────╯
+
+
+🆘 常见问题
+═══════════════════════════════════════════════════════════════════════════════
+
+Q: 找不到凭据？
+A: $ export CEREBRIUM_SERVICE_ACCOUNT_TOKEN="your-full-token"
+   验证: $ echo $CEREBRIUM_SERVICE_ACCOUNT_TOKEN
+
+Q: CLI 装不上？
+A: $ pip install --upgrade cerebrium --break-system-packages
+
+Q: 部署超时？
+A: $ cerebrium deploy --detach (后台运行)
+
+Q: 需要查看详细步骤？
+A: 查看 REDEPLOY_GUIDE.md
+
+
+💡 快速参考
+═══════════════════════════════════════════════════════════════════════════════
+
+【快速部署】
+  1. export CEREBRIUM_SERVICE_ACCOUNT_TOKEN="token"
+  2. ./quick_redeploy.sh
+
+【手动部署】
+  1. cd cerebrium
+  2. pip install --upgrade cerebrium --break-system-packages
+  3. cerebrium deploy --disable-syntax-check -y
+
+【验证成功】
+  1. 查看仪表板: https://dashboard.cerebrium.ai/projects/p-194bc83f
+  2. 测试 API: python3 test_inference.py
+  3. 用 Web UI: open index.html
+
+
+⏱️ 时间表
+═══════════════════════════════════════════════════════════════════════════════
+
+验证凭据 ........... 10 秒
+安装 CLI ........... 1-2 分钟
+上传代码 ........... 1 分钟
+构建镜像 ........... 2-3 分钟
+启动应用 ........... 1-2 分钟
+─────────────────────────
+总计 .............. 5-8 分钟
+
+
+📝 脚本文件说明
+═══════════════════════════════════════════════════════════════════════════════
+
+quick_redeploy.sh
+  ├─ 作用: 自动化一键部署脚本
+  ├─ 使用: chmod +x quick_redeploy.sh && export TOKEN=... && ./quick_redeploy.sh
+  ├─ 特性: 
+  │  ├─ 自动验证凭据
+  │  ├─ 自动安装 CLI
+  │  ├─ 彩色输出
+  │  ├─ 进度提示
+  │  └─ 部署结果展示
+  └─ 推荐: ⭐⭐⭐⭐⭐
+
+
+📄 文档文件说明
+═══════════════════════════════════════════════════════════════════════════════
+
+QUICK_REDEPLOY_README.md
+  └─ 快速参考 (3 分钟)
+     - 最快方式
+     - 验证方法
+     - 常见问题
+
+REDEPLOY_GUIDE.md
+  └─ 详细指南 (10 分钟)
+     - 完整步骤
+     - 多种方式
+     - 故障排除
+
+START_HERE.txt
+  └─ 项目入门指南
+     - 整体介绍
+     - 三种使用方式
+
+QUICK_START.md
+  └─ 快速开始
+     - API 使用
+     - 代码示例
+
+
+🎯 选择适合的方式
+═══════════════════════════════════════════════════════════════════════════════
+
+【如果你很着急】(< 5 分钟)
+  → 一行命令
+     export TOKEN=... && cd cerebrium && \
+     pip install -U cerebrium -q --break-system-packages && \
+     cerebrium deploy --disable-syntax-check -y
+
+【如果你想要自动化】(2 分钟)
+  → 运行脚本
+     export CEREBRIUM_SERVICE_ACCOUNT_TOKEN="your-token"
+     ./quick_redeploy.sh
+
+【如果你想理解全过程】(10 分钟)
+  → 阅读 REDEPLOY_GUIDE.md
+     然后手动执行每一步
+
+【如果你想参考命令】(< 1 分钟)
+  → 查看此文件下方的"快速参考"
+
+
+🔗 相关链接
+═══════════════════════════════════════════════════════════════════════════════
+
+仪表板:    https://dashboard.cerebrium.ai/projects/p-194bc83f
+API 端点:  https://api.aws.us-east-1.cerebrium.ai/v4/p-194bc83f/wan22-ti2v
+文档:      查看同目录下的各种 .md 文件
+
+
+💪 你已经准备好了!
+═══════════════════════════════════════════════════════════════════════════════
+
+所有必要的脚本和文档都已准备好。
+
+无论何时应用被删除，你都可以在几分钟内快速恢复。
+
+选择上面的任何一种方式开始部署吧！🚀
+
+
+═══════════════════════════════════════════════════════════════════════════════
+最后更新: 2024-11-11
