@@ -4,9 +4,9 @@ python_version = "3.11"
 disable_auth = false
 
 [cerebrium.hardware]
-compute = "AMPERE_A100_40GB"
+compute = "ADA_L40"
 cpu = 16
-memory = 40.0
+memory = 48.0
 
 [cerebrium.scaling]
 min_replicas = 0
