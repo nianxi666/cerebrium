@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wan2.2 TI2V - Text-Image-to-Video Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+        }
+
+        @media (max-width: 900px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button.submit-btn {
+            flex: 1;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button.submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button.submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        button.reset-btn {
+            padding: 14px 28px;
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button.reset-btn:hover {
+            background: #e8e8e8;
+        }
+
+        .output-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .output-box {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            min-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #333;
+        }
+
+        .output-box.success {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+
+        .output-box.error {
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+
+        .output-box.loading {
+            background: #eff6ff;
+            border-color: #93c5fd;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #86efac;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .video-player {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .video-player.show {
+            display: block;
+        }
+
+        .video-player video {
+            width: 100%;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .download-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #333;
+        }
+
+        .info-box strong {
+            color: #667eea;
+        }
+
+        .model-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-item .label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-item .value {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Wan2.2 TI2V Generator</h1>
+            <p>Text-to-Video & Text-Image-to-Video with Cerebrium AI</p>
+        </div>
+
+        <div class="content">
+            <div class="form-section">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('t2v')">T2V</button>
+                    <button class="tab-btn" onclick="switchTab('ti2v')">TI2V</button>
+                </div>
+
+                <!-- T2V Tab -->
+                <div id="t2v" class="tab-content active">
+                    <div class="info-box">
+                        <strong>ℹ️ Pure Text-to-Video:</strong> Generate videos from text prompts only.
+                    </div>
+                    <form id="t2vForm" onsubmit="submitRequest(event, 't2v')">
+                        <div class="form-group">
+                            <label for="t2v_prompt">Prompt *</label>
+                            <textarea id="t2v_prompt" placeholder="Describe the video you want to generate..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="t2v_negative">Negative Prompt</label>
+                            <textarea id="t2v_negative" placeholder="What to avoid..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group">
+                                <label for="t2v_frames">Frames</label>
+                                <input type="number" id="t2v_frames" value="121" min="25" step="4">
+                                <small style="margin-top: 4px; color: #666;">Must be 4n+1 (e.g., 25, 29, 33...121)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="t2v_steps">Inference Steps</label>
+                                <input type="number" id="t2v_steps" value="30" min="1" max="100">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group">
+                                <label for="t2v_guidance">Guidance Scale</label>
+                                <input type="number" id="t2v_guidance" value="7.5" min="1" max="20" step="0.5">
+                            </div>
+                            <div class="form-group">
+                                <label for="t2v_seed">Seed (optional)</label>
+                                <input type="number" id="t2v_seed" placeholder="Leave empty for random">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group">
+                                <label for="t2v_height">Height</label>
+                                <input type="number" id="t2v_height" value="704" step="32">
+                            </div>
+                            <div class="form-group">
+                                <label for="t2v_width">Width</label>
+                                <input type="number" id="t2v_width" value="1280" step="32">
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="submit-btn" id="t2v_submit">Generate Video</button>
+                            <button type="reset" class="reset-btn">Clear</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- TI2V Tab -->
+                <div id="ti2v" class="tab-content">
+                    <div class="info-box">
+                        <strong>ℹ️ Text-Image-to-Video:</strong> Generate videos using text + reference image.
+                    </div>
+                    <form id="ti2vForm" onsubmit="submitRequest(event, 'ti2v')">
+                        <div class="form-group">
+                            <label for="ti2v_prompt">Prompt *</label>
+                            <textarea id="ti2v_prompt" placeholder="Describe the video you want to generate..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ti2v_image">Image URL *</label>
+                            <input type="url" id="ti2v_image" placeholder="https://..." required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ti2v_negative">Negative Prompt</label>
+                            <textarea id="ti2v_negative" placeholder="What to avoid..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group">
+                                <label for="ti2v_frames">Frames</label>
+                                <input type="number" id="ti2v_frames" value="121" min="25" step="4">
+                            </div>
+                            <div class="form-group">
+                                <label for="ti2v_steps">Inference Steps</label>
+                                <input type="number" id="ti2v_steps" value="30" min="1" max="100">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group">
+                                <label for="ti2v_guidance">Guidance Scale</label>
+                                <input type="number" id="ti2v_guidance" value="7.5" min="1" max="20" step="0.5">
+                            </div>
+                            <div class="form-group">
+                                <label for="ti2v_seed">Seed (optional)</label>
+                                <input type="number" id="ti2v_seed" placeholder="Leave empty for random">
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="submit-btn" id="ti2v_submit">Generate Video</button>
+                            <button type="reset" class="reset-btn">Clear</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="model-stats">
+                    <div class="stat-item">
+                        <div class="label">GPU</div>
+                        <div class="value">ADA L40</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">VRAM</div>
+                        <div class="value">48 GB</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">Max Frames</div>
+                        <div class="value">121</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">Resolution</div>
+                        <div class="value">1280×704</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <h3 style="margin-bottom: 15px; color: #333;">Output</h3>
+                <div id="status" class="status"></div>
+                <div id="output" class="output-box"></div>
+                <div id="videoPlayer" class="video-player">
+                    <video id="generatedVideo" controls></video>
+                    <button id="downloadBtn" class="download-btn">📥 Download Video</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://api.aws.us-east-1.cerebrium.ai/v4/p-194bc83f/wan22-ti2v';
+        let currentMode = 't2v';
+        let lastVideoBase64 = null;
+
+        function switchTab(tab) {
+            currentMode = tab;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function submitRequest(e, mode) {
+            e.preventDefault();
+            currentMode = mode;
+
+            const apiKey = prompt('Please enter your Cerebrium API Key:', '');
+            if (!apiKey) {
+                updateStatus('API key required', 'error');
+                return;
+            }
+
+            const payload = mode === 't2v' ? buildT2VPayload() : buildTI2VPayload();
+            
+            if (!payload) {
+                updateStatus('Please fill all required fields', 'error');
+                return;
+            }
+
+            makeRequest(payload, apiKey);
+        }
+
+        function buildT2VPayload() {
+            const prompt = document.getElementById('t2v_prompt').value.trim();
+            if (!prompt) return null;
+
+            return {
+                prompt: prompt,
+                negative_prompt: document.getElementById('t2v_negative').value || undefined,
+                num_frames: parseInt(document.getElementById('t2v_frames').value),
+                num_inference_steps: parseInt(document.getElementById('t2v_steps').value),
+                guidance_scale: parseFloat(document.getElementById('t2v_guidance').value),
+                height: parseInt(document.getElementById('t2v_height').value),
+                width: parseInt(document.getElementById('t2v_width').value),
+                fps: 24,
+                seed: document.getElementById('t2v_seed').value ? parseInt(document.getElementById('t2v_seed').value) : undefined
+            };
+        }
+
+        function buildTI2VPayload() {
+            const prompt = document.getElementById('ti2v_prompt').value.trim();
+            const imageUrl = document.getElementById('ti2v_image').value.trim();
+            
+            if (!prompt || !imageUrl) return null;
+
+            return {
+                prompt: prompt,
+                negative_prompt: document.getElementById('ti2v_negative').value || undefined,
+                image_url: imageUrl,
+                num_frames: parseInt(document.getElementById('ti2v_frames').value),
+                num_inference_steps: parseInt(document.getElementById('ti2v_steps').value),
+                guidance_scale: parseFloat(document.getElementById('ti2v_guidance').value),
+                height: 704,
+                width: 1280,
+                fps: 24,
+                seed: document.getElementById('ti2v_seed').value ? parseInt(document.getElementById('ti2v_seed').value) : undefined
+            };
+        }
+
+        async function makeRequest(payload, apiKey) {
+            const submitBtn = document.getElementById(`${currentMode}_submit`);
+            submitBtn.disabled = true;
+
+            updateStatus('🔄 Generating video... This may take a few minutes.', 'info');
+            updateOutput(`<div class="spinner"></div>
+Sending request with payload:
+${JSON.stringify(payload, null, 2)}
+
+Waiting for response...`, 'loading');
+
+            try {
+                const response = await fetch(`${API_BASE}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${error}`);
+                }
+
+                const result = await response.json();
+
+                if (result.video_base64) {
+                    lastVideoBase64 = result.video_base64;
+                    const videoBlob = base64ToBlob(result.video_base64, 'video/mp4');
+                    const videoUrl = URL.createObjectURL(videoBlob);
+                    document.getElementById('generatedVideo').src = videoUrl;
+                    document.getElementById('videoPlayer').classList.add('show');
+
+                    updateStatus('✅ Video generated successfully!', 'success');
+                    updateOutput(`Video Generated Successfully!\n\n${JSON.stringify(result.details || {}, null, 2)}`);
+                } else {
+                    throw new Error('No video in response');
+                }
+            } catch (error) {
+                updateStatus(`❌ Error: ${error.message}`, 'error');
+                updateOutput(`Error: ${error.message}\n\nPlease check your API key and try again.`);
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            return new Blob([byteArray], { type: mimeType });
+        }
+
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status show ${type}`;
+        }
+
+        function updateOutput(message, type = '') {
+            const outputEl = document.getElementById('output');
+            outputEl.textContent = message;
+            outputEl.className = `output-box ${type}`;
+        }
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (lastVideoBase64) {
+                const blob = base64ToBlob(lastVideoBase64, 'video/mp4');
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `wan-video-${new Date().getTime()}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
+        });
+
+        // Initialize
+        updateOutput('👋 Welcome to Wan2.2 TI2V Generator!\n\nSelect T2V or TI2V mode and fill in the form to generate videos.\n\nAPI Key will be required when you submit.');
+    </script>
+</body>
+</html>
